@@ -1,3 +1,4 @@
+
 # Spec: Registration
 
 ## Overview

@@ -38,6 +38,16 @@ def init_db():
     conn.close()
 
 
+def get_user_by_id(user_id):
+    conn = get_db()
+    user = conn.execute(
+        "SELECT id, name, email FROM users WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+    conn.close()
+    return user
+
+
 def get_user_by_email(email):
     conn = get_db()
     user = conn.execute(
