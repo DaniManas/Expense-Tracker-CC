@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, request, session, url_for
-from werkzeug.security import check_password_hash
-from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, create_user
+from werkzeug.security import check_password_hash, generate_password_hash
+from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-prod"
@@ -21,6 +21,9 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("register.html")
 
@@ -46,6 +49,9 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("login.html")
 
@@ -80,9 +86,40 @@ def logout():
     return redirect(url_for("landing"))
 
 
-@app.route("/profile")
+@app.route("/profile", methods=["GET", "POST"])
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    user = get_user_by_id(session["user_id"])
+
+    if request.method == "GET":
+        return render_template("profile.html", user=user)
+
+    name = request.form["name"].strip()
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not name:
+        return render_template("profile.html", user=user, error="Name cannot be empty.")
+
+    if new_password:
+        if not check_password_hash(user["password_hash"], current_password):
+            return render_template("profile.html", user=user, error="Current password is incorrect.")
+
+        if len(new_password) < 8:
+            return render_template("profile.html", user=user, error="New password must be at least 8 characters.")
+
+        if new_password != confirm_password:
+            return render_template("profile.html", user=user, error="New passwords do not match.")
+
+        update_user(session["user_id"], name, generate_password_hash(new_password))
+    else:
+        update_user(session["user_id"], name)
+
+    user = get_user_by_id(session["user_id"])
+    return render_template("profile.html", user=user, success="Profile updated successfully.")
 
 
 @app.route("/expenses/add")

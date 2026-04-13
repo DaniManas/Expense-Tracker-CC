@@ -422,6 +422,36 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 1.25rem;
 }
 
+.auth-success {
+    background: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid #b8d4c0;
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+}
+
+.profile-info {
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+}
+
+.profile-divider {
+    border: none;
+    border-top: 1px solid var(--border-soft);
+    margin: 1.5rem 0;
+}
+
+.profile-section-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 1rem;
+}
+
 .form-group { margin-bottom: 1.25rem; }
 
 .form-group label {

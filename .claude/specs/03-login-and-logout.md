@@ -1,4 +1,4 @@
-# Spec: Login and Logout
+no i# Spec: Login and Logout
 
 ## Overview
 This step wires up the login form and logout action so users can authenticate and end their session. The `GET /login` route and `login.html` template already exist; this step adds the `POST /login` handler that validates credentials, verifies the hashed password, stores the user's id in the Flask session, and redirects to the profile page on success. The `GET /logout` stub is replaced with a handler that clears the session and redirects to the landing page. A `get_user_by_id()` helper is added to `database/db.py` for use in future steps. `app.secret_key` must be set for session support.
