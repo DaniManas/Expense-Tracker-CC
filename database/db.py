@@ -41,7 +41,7 @@ def init_db():
 def get_user_by_id(user_id):
     conn = get_db()
     user = conn.execute(
-        "SELECT id, name, email FROM users WHERE id = ?",
+        "SELECT id, name, email, password_hash, created_at FROM users WHERE id = ?",
         (user_id,),
     ).fetchone()
     conn.close()
@@ -56,6 +56,22 @@ def get_user_by_email(email):
     ).fetchone()
     conn.close()
     return user
+
+
+def update_user(user_id, name, password_hash=None):
+    conn = get_db()
+    if password_hash:
+        conn.execute(
+            "UPDATE users SET name = ?, password_hash = ? WHERE id = ?",
+            (name, password_hash, user_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE users SET name = ? WHERE id = ?",
+            (name, user_id),
+        )
+    conn.commit()
+    conn.close()
 
 
 def create_user(name, email, password):
