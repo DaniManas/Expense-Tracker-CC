@@ -63,7 +63,7 @@ def login():
         return render_template("login.html", error="Invalid email or password.")
 
     session["user_id"] = user["id"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 # ------------------------------------------------------------------ #
@@ -93,33 +93,35 @@ def profile():
 
     user = get_user_by_id(session["user_id"])
 
-    if request.method == "GET":
-        return render_template("profile.html", user=user)
+    stats = {
+        "total_spent": 324.45,
+        "transaction_count": 8,
+        "top_category": "Bills",
+    }
 
-    name = request.form["name"].strip()
-    current_password = request.form.get("current_password", "")
-    new_password = request.form.get("new_password", "")
-    confirm_password = request.form.get("confirm_password", "")
+    transactions = [
+        {"date": "2026-04-10", "description": "Groceries",       "category": "Food",          "amount": 18.20},
+        {"date": "2026-04-10", "description": "Miscellaneous",   "category": "Other",         "amount": 8.75},
+        {"date": "2026-04-09", "description": "Clothing",        "category": "Shopping",      "amount": 65.00},
+        {"date": "2026-04-07", "description": "Cinema tickets",  "category": "Entertainment", "amount": 25.00},
+        {"date": "2026-04-05", "description": "Pharmacy",        "category": "Health",        "amount": 30.00},
+        {"date": "2026-04-03", "description": "Electricity bill","category": "Bills",         "amount": 120.00},
+        {"date": "2026-04-02", "description": "Monthly bus pass","category": "Transport",     "amount": 45.00},
+        {"date": "2026-04-01", "description": "Lunch at cafe",   "category": "Food",          "amount": 12.50},
+    ]
 
-    if not name:
-        return render_template("profile.html", user=user, error="Name cannot be empty.")
+    categories = [
+        {"name": "Bills",         "amount": 120.00, "pct": 37},
+        {"name": "Shopping",      "amount": 65.00,  "pct": 20},
+        {"name": "Transport",     "amount": 45.00,  "pct": 14},
+        {"name": "Health",        "amount": 30.00,  "pct": 9},
+        {"name": "Entertainment", "amount": 25.00,  "pct": 8},
+        {"name": "Food",          "amount": 30.70,  "pct": 9},
+        {"name": "Other",         "amount": 8.75,   "pct": 3},
+    ]
 
-    if new_password:
-        if not check_password_hash(user["password_hash"], current_password):
-            return render_template("profile.html", user=user, error="Current password is incorrect.")
-
-        if len(new_password) < 8:
-            return render_template("profile.html", user=user, error="New password must be at least 8 characters.")
-
-        if new_password != confirm_password:
-            return render_template("profile.html", user=user, error="New passwords do not match.")
-
-        update_user(session["user_id"], name, generate_password_hash(new_password))
-    else:
-        update_user(session["user_id"], name)
-
-    user = get_user_by_id(session["user_id"])
-    return render_template("profile.html", user=user, success="Profile updated successfully.")
+    return render_template("profile.html", user=user, stats=stats,
+                           transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
