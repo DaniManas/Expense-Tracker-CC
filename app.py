@@ -103,6 +103,11 @@ def profile():
         return redirect(url_for("login"))
 
     user = get_user_by_id(session["user_id"])
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+    transactions = get_expenses(session["user_id"], start_date or None, end_date or None)
+    stats = get_expense_stats(session["user_id"], start_date or None, end_date or None)
+    categories = _build_categories(transactions, stats["total_spent"])
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -117,12 +122,6 @@ def profile():
         elif new_password and len(new_password) < 8:
             error = "Password must be at least 8 characters."
 
-        start_date = request.args.get("start_date", "").strip()
-        end_date = request.args.get("end_date", "").strip()
-        transactions = get_expenses(session["user_id"], start_date or None, end_date or None)
-        stats = get_expense_stats(session["user_id"], start_date or None, end_date or None)
-        categories = _build_categories(transactions, stats["total_spent"])
-
         if error:
             return render_template("profile.html", user=user, stats=stats,
                                    transactions=transactions, categories=categories,
@@ -131,18 +130,7 @@ def profile():
 
         password_hash = generate_password_hash(new_password) if new_password else None
         update_user(session["user_id"], name, password_hash)
-        user = get_user_by_id(session["user_id"])
-        return render_template("profile.html", user=user, stats=stats,
-                               transactions=transactions, categories=categories,
-                               start_date=start_date, end_date=end_date,
-                               success="Profile updated successfully.")
-
-    # GET branch
-    start_date = request.args.get("start_date", "").strip()
-    end_date = request.args.get("end_date", "").strip()
-    transactions = get_expenses(session["user_id"], start_date or None, end_date or None)
-    stats = get_expense_stats(session["user_id"], start_date or None, end_date or None)
-    categories = _build_categories(transactions, stats["total_spent"])
+        return redirect(url_for("profile", start_date=start_date, end_date=end_date))
 
     return render_template("profile.html", user=user, stats=stats,
                            transactions=transactions, categories=categories,
