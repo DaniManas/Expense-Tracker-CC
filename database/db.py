@@ -89,55 +89,58 @@ def create_user(name, email, password):
 
 def get_expenses(user_id, start_date=None, end_date=None):
     conn = get_db()
-    query = "SELECT id, amount, category, date, description FROM expenses WHERE user_id = ?"
-    params = [user_id]
-    if start_date:
-        query += " AND date >= ?"
-        params.append(start_date)
-    if end_date:
-        query += " AND date <= ?"
-        params.append(end_date)
-    query += " ORDER BY date DESC"
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
-    return rows
+    try:
+        query = "SELECT id, amount, category, date, description FROM expenses WHERE user_id = ?"
+        params = [user_id]
+        if start_date:
+            query += " AND date >= ?"
+            params.append(start_date)
+        if end_date:
+            query += " AND date <= ?"
+            params.append(end_date)
+        query += " ORDER BY date DESC"
+        rows = conn.execute(query, params).fetchall()
+        return rows
+    finally:
+        conn.close()
 
 
 def get_expense_stats(user_id, start_date=None, end_date=None):
     conn = get_db()
+    try:
+        base_where = " WHERE user_id = ?"
+        params = [user_id]
+        if start_date:
+            base_where += " AND date >= ?"
+            params.append(start_date)
+        if end_date:
+            base_where += " AND date <= ?"
+            params.append(end_date)
 
-    base_where = " WHERE user_id = ?"
-    params = [user_id]
-    if start_date:
-        base_where += " AND date >= ?"
-        params.append(start_date)
-    if end_date:
-        base_where += " AND date <= ?"
-        params.append(end_date)
-
-    summary = conn.execute(
-        "SELECT COALESCE(SUM(amount), 0) as total_spent, COUNT(*) as transaction_count FROM expenses" + base_where,
-        params,
-    ).fetchone()
-
-    total_spent = summary["total_spent"]
-    transaction_count = summary["transaction_count"]
-
-    top_category = "—"
-    if transaction_count > 0:
-        cat_row = conn.execute(
-            "SELECT category, SUM(amount) as cat_total FROM expenses" + base_where + " GROUP BY category ORDER BY cat_total DESC LIMIT 1",
+        summary = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) as total_spent, COUNT(*) as transaction_count FROM expenses" + base_where,
             params,
         ).fetchone()
-        if cat_row:
-            top_category = cat_row["category"]
 
-    conn.close()
-    return {
-        "total_spent": total_spent,
-        "transaction_count": transaction_count,
-        "top_category": top_category,
-    }
+        total_spent = summary["total_spent"]
+        transaction_count = summary["transaction_count"]
+
+        top_category = "—"
+        if transaction_count > 0:
+            cat_row = conn.execute(
+                "SELECT category, SUM(amount) as cat_total FROM expenses" + base_where + " GROUP BY category ORDER BY cat_total DESC LIMIT 1",
+                params,
+            ).fetchone()
+            if cat_row:
+                top_category = cat_row["category"]
+
+        return {
+            "total_spent": total_spent,
+            "transaction_count": transaction_count,
+            "top_category": top_category,
+        }
+    finally:
+        conn.close()
 
 
 def seed_db():
