@@ -61,3 +61,27 @@ def test_get_expenses_ordered_desc(user_id):
 def test_get_expenses_empty_string_dates_ignored(user_id):
     rows = get_expenses(user_id, start_date="", end_date="")
     assert len(rows) == 3
+
+
+from database.db import get_expense_stats
+
+
+def test_get_expense_stats_no_filter(user_id):
+    stats = get_expense_stats(user_id)
+    assert stats["total_spent"] == pytest.approx(60.00)
+    assert stats["transaction_count"] == 3
+    assert stats["top_category"] == "Bills"
+
+
+def test_get_expense_stats_with_date_range(user_id):
+    stats = get_expense_stats(user_id, start_date="2026-04-01", end_date="2026-04-30")
+    assert stats["total_spent"] == pytest.approx(30.00)
+    assert stats["transaction_count"] == 2
+    assert stats["top_category"] == "Transport"
+
+
+def test_get_expense_stats_no_rows_returns_defaults(user_id):
+    stats = get_expense_stats(user_id, start_date="2099-01-01")
+    assert stats["total_spent"] == 0
+    assert stats["transaction_count"] == 0
+    assert stats["top_category"] == "—"
