@@ -87,6 +87,22 @@ def create_user(name, email, password):
     return user_id
 
 
+def get_expenses(user_id, start_date=None, end_date=None):
+    conn = get_db()
+    query = "SELECT id, amount, category, date, description FROM expenses WHERE user_id = ?"
+    params = [user_id]
+    if start_date:
+        query += " AND date >= ?"
+        params.append(start_date)
+    if end_date:
+        query += " AND date <= ?"
+        params.append(end_date)
+    query += " ORDER BY date DESC"
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return rows
+
+
 def seed_db():
     conn = get_db()
 
