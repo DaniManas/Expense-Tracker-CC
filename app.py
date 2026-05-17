@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
-from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user
+from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user, get_expenses, get_expense_stats
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-prod"
@@ -86,42 +86,55 @@ def logout():
     return redirect(url_for("landing"))
 
 
+def _build_categories(transactions, total_spent):
+    cat_totals = {}
+    for txn in transactions:
+        cat_totals[txn["category"]] = cat_totals.get(txn["category"], 0) + txn["amount"]
+    categories = []
+    for name, amount in sorted(cat_totals.items(), key=lambda x: x[1], reverse=True):
+        pct = round(amount / total_spent * 100) if total_spent else 0
+        categories.append({"name": name, "amount": amount, "pct": pct})
+    return categories
+
+
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
     user = get_user_by_id(session["user_id"])
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+    transactions = get_expenses(session["user_id"], start_date or None, end_date or None)
+    stats = get_expense_stats(session["user_id"], start_date or None, end_date or None)
+    categories = _build_categories(transactions, stats["total_spent"])
 
-    stats = {
-        "total_spent": 324.45,
-        "transaction_count": 8,
-        "top_category": "Bills",
-    }
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
 
-    transactions = [
-        {"date": "2026-04-10", "description": "Groceries",       "category": "Food",          "amount": 18.20},
-        {"date": "2026-04-10", "description": "Miscellaneous",   "category": "Other",         "amount": 8.75},
-        {"date": "2026-04-09", "description": "Clothing",        "category": "Shopping",      "amount": 65.00},
-        {"date": "2026-04-07", "description": "Cinema tickets",  "category": "Entertainment", "amount": 25.00},
-        {"date": "2026-04-05", "description": "Pharmacy",        "category": "Health",        "amount": 30.00},
-        {"date": "2026-04-03", "description": "Electricity bill","category": "Bills",         "amount": 120.00},
-        {"date": "2026-04-02", "description": "Monthly bus pass","category": "Transport",     "amount": 45.00},
-        {"date": "2026-04-01", "description": "Lunch at cafe",   "category": "Food",          "amount": 12.50},
-    ]
+        error = None
+        if not name:
+            error = "Name is required."
+        elif new_password and new_password != confirm_password:
+            error = "Passwords do not match."
+        elif new_password and len(new_password) < 8:
+            error = "Password must be at least 8 characters."
 
-    categories = [
-        {"name": "Bills",         "amount": 120.00, "pct": 37},
-        {"name": "Shopping",      "amount": 65.00,  "pct": 20},
-        {"name": "Transport",     "amount": 45.00,  "pct": 14},
-        {"name": "Health",        "amount": 30.00,  "pct": 9},
-        {"name": "Entertainment", "amount": 25.00,  "pct": 8},
-        {"name": "Food",          "amount": 30.70,  "pct": 9},
-        {"name": "Other",         "amount": 8.75,   "pct": 3},
-    ]
+        if error:
+            return render_template("profile.html", user=user, stats=stats,
+                                   transactions=transactions, categories=categories,
+                                   start_date=start_date, end_date=end_date,
+                                   error=error)
+
+        password_hash = generate_password_hash(new_password) if new_password else None
+        update_user(session["user_id"], name, password_hash)
+        return redirect(url_for("profile", start_date=start_date, end_date=end_date))
 
     return render_template("profile.html", user=user, stats=stats,
-                           transactions=transactions, categories=categories)
+                           transactions=transactions, categories=categories,
+                           start_date=start_date, end_date=end_date)
 
 
 @app.route("/expenses/add")

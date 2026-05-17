@@ -36,6 +36,29 @@
     <!-- ── 3 & 4. Transactions + Category breakdown ── -->
     <div class="profile-grid">
 
+        <!-- ── Date filter ── -->
+        <div class="filter-bar">
+            <form method="GET" action="{{ url_for('profile') }}" class="filter-form">
+                <label for="start_date" class="filter-label">From</label>
+                <input type="date" id="start_date" name="start_date"
+                       value="{{ start_date }}" class="filter-input">
+                <label for="end_date" class="filter-label">To</label>
+                <input type="date" id="end_date" name="end_date"
+                       value="{{ end_date }}" class="filter-input">
+                <button type="submit" class="btn-accent filter-btn">Filter</button>
+                {% if start_date or end_date %}
+                <a href="{{ url_for('profile') }}" class="filter-clear">Clear</a>
+                {% endif %}
+            </form>
+            {% if start_date or end_date %}
+            <p class="filter-active-label">
+                Showing results
+                {% if start_date %}from <strong>{{ start_date }}</strong>{% endif %}
+                {% if end_date %}to <strong>{{ end_date }}</strong>{% endif %}
+            </p>
+            {% endif %}
+        </div>
+
         <!-- Transaction history -->
         <section class="profile-card">
             <h2 class="profile-card-title">Recent Transactions</h2>
