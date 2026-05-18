@@ -1,6 +1,9 @@
+from datetime import date as date_type
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
-from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user, get_expenses, get_expense_stats
+from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user, create_expense, get_expenses, get_expense_stats
+
+VALID_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-prod"
@@ -137,9 +140,49 @@ def profile():
                            start_date=start_date, end_date=end_date)
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template("add_expense.html", categories=VALID_CATEGORIES)
+
+    amount_raw = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    expense_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    error = None
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            error = "Amount must be greater than zero."
+    except ValueError:
+        error = "Amount must be a valid number."
+
+    if not error and category not in VALID_CATEGORIES:
+        error = "Please select a valid category."
+
+    if not error and not expense_date:
+        error = "Date is required."
+
+    if not error:
+        try:
+            date_type.fromisoformat(expense_date)
+        except ValueError:
+            error = "Date must be a valid date (YYYY-MM-DD)."
+
+    if error:
+        return render_template(
+            "add_expense.html",
+            categories=VALID_CATEGORIES,
+            error=error,
+            form={"amount": amount_raw, "category": category, "date": expense_date, "description": description},
+        )
+
+    create_expense(session["user_id"], amount, category, expense_date, description)
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")
