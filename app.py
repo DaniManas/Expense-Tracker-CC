@@ -1,9 +1,30 @@
 from datetime import date as date_type
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
-from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, update_user, create_user, create_expense, get_expenses, get_expense_stats
+from database.db import (
+    get_db,
+    init_db,
+    seed_db,
+    get_user_by_email,
+    get_user_by_id,
+    update_user,
+    create_user,
+    create_expense,
+    get_expenses,
+    get_expense_stats,
+    get_expense_by_id,
+    update_expense,
+)
 
-VALID_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+VALID_CATEGORIES = [
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+]
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-in-prod"
@@ -16,6 +37,7 @@ with app.app_context():
 # ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
+
 
 @app.route("/")
 def landing():
@@ -38,13 +60,19 @@ def register():
         return render_template("register.html", error="Name is required.")
 
     if "@" not in email:
-        return render_template("register.html", error="Please enter a valid email address.")
+        return render_template(
+            "register.html", error="Please enter a valid email address."
+        )
 
     if len(password) < 8:
-        return render_template("register.html", error="Password must be at least 8 characters.")
+        return render_template(
+            "register.html", error="Password must be at least 8 characters."
+        )
 
     if get_user_by_email(email):
-        return render_template("register.html", error="An account with that email already exists.")
+        return render_template(
+            "register.html", error="An account with that email already exists."
+        )
 
     create_user(name, email, password)
     return redirect(url_for("login"))
@@ -72,6 +100,7 @@ def login():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
+
 
 @app.route("/terms")
 def terms():
@@ -108,7 +137,9 @@ def profile():
     user = get_user_by_id(session["user_id"])
     start_date = request.args.get("start_date", "").strip()
     end_date = request.args.get("end_date", "").strip()
-    transactions = get_expenses(session["user_id"], start_date or None, end_date or None)
+    transactions = get_expenses(
+        session["user_id"], start_date or None, end_date or None
+    )
     stats = get_expense_stats(session["user_id"], start_date or None, end_date or None)
     categories = _build_categories(transactions, stats["total_spent"])
 
@@ -126,18 +157,30 @@ def profile():
             error = "Password must be at least 8 characters."
 
         if error:
-            return render_template("profile.html", user=user, stats=stats,
-                                   transactions=transactions, categories=categories,
-                                   start_date=start_date, end_date=end_date,
-                                   error=error)
+            return render_template(
+                "profile.html",
+                user=user,
+                stats=stats,
+                transactions=transactions,
+                categories=categories,
+                start_date=start_date,
+                end_date=end_date,
+                error=error,
+            )
 
         password_hash = generate_password_hash(new_password) if new_password else None
         update_user(session["user_id"], name, password_hash)
         return redirect(url_for("profile", start_date=start_date, end_date=end_date))
 
-    return render_template("profile.html", user=user, stats=stats,
-                           transactions=transactions, categories=categories,
-                           start_date=start_date, end_date=end_date)
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @app.route("/expenses/add", methods=["GET", "POST"])
@@ -178,16 +221,75 @@ def add_expense():
             "add_expense.html",
             categories=VALID_CATEGORIES,
             error=error,
-            form={"amount": amount_raw, "category": category, "date": expense_date, "description": description},
+            form={
+                "amount": amount_raw,
+                "category": category,
+                "date": expense_date,
+                "description": description,
+            },
         )
 
     create_expense(session["user_id"], amount, category, expense_date, description)
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id)
+    if expense is None:
+        abort(404)
+    if expense["user_id"] != session["user_id"]:
+        abort(403)
+
+    if request.method == "GET":
+        return render_template(
+            "edit_expense.html", categories=VALID_CATEGORIES, expense=expense
+        )
+
+    amount_raw = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    expense_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    error = None
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            error = "Amount must be greater than zero."
+    except ValueError:
+        error = "Amount must be a valid number."
+
+    if not error and category not in VALID_CATEGORIES:
+        error = "Please select a valid category."
+
+    if not error and not expense_date:
+        error = "Date is required."
+
+    if not error:
+        try:
+            date_type.fromisoformat(expense_date)
+        except ValueError:
+            error = "Date must be a valid date (YYYY-MM-DD)."
+
+    if error:
+        return render_template(
+            "edit_expense.html",
+            categories=VALID_CATEGORIES,
+            expense=expense,
+            error=error,
+            form={
+                "amount": amount_raw,
+                "category": category,
+                "date": expense_date,
+                "description": description,
+            },
+        )
+
+    update_expense(id, amount, category, expense_date, description)
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")
