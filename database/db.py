@@ -2,7 +2,7 @@ import sqlite3
 import os
 from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'spendly.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "spendly.db")
 
 
 def get_db():
@@ -130,7 +130,8 @@ def get_expense_stats(user_id, start_date=None, end_date=None):
             params.append(end_date)
 
         summary = conn.execute(
-            "SELECT COALESCE(SUM(amount), 0) as total_spent, COUNT(*) as transaction_count FROM expenses" + base_where,
+            "SELECT COALESCE(SUM(amount), 0) as total_spent, COUNT(*) as transaction_count FROM expenses"
+            + base_where,
             params,
         ).fetchone()
 
@@ -140,7 +141,9 @@ def get_expense_stats(user_id, start_date=None, end_date=None):
         top_category = "—"
         if transaction_count > 0:
             cat_row = conn.execute(
-                "SELECT category, SUM(amount) as cat_total FROM expenses" + base_where + " GROUP BY category ORDER BY cat_total DESC LIMIT 1",
+                "SELECT category, SUM(amount) as cat_total FROM expenses"
+                + base_where
+                + " GROUP BY category ORDER BY cat_total DESC LIMIT 1",
                 params,
             ).fetchone()
             if cat_row:
@@ -151,6 +154,29 @@ def get_expense_stats(user_id, start_date=None, end_date=None):
             "transaction_count": transaction_count,
             "top_category": top_category,
         }
+    finally:
+        conn.close()
+
+
+def get_expense_by_id(expense_id):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, user_id, amount, category, date, description FROM expenses WHERE id = ?",
+            (expense_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def update_expense(expense_id, amount, category, date, description):
+    conn = get_db()
+    try:
+        conn.execute(
+            "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? WHERE id = ?",
+            (amount, category, date, description or None, expense_id),
+        )
+        conn.commit()
     finally:
         conn.close()
 
@@ -170,14 +196,14 @@ def seed_db():
     user_id = cursor.lastrowid
 
     sample_expenses = [
-        (user_id, 12.50,  "Food",          "2026-04-01", "Lunch at cafe"),
-        (user_id, 45.00,  "Transport",     "2026-04-02", "Monthly bus pass"),
-        (user_id, 120.00, "Bills",         "2026-04-03", "Electricity bill"),
-        (user_id, 30.00,  "Health",        "2026-04-05", "Pharmacy"),
-        (user_id, 25.00,  "Entertainment", "2026-04-07", "Cinema tickets"),
-        (user_id, 65.00,  "Shopping",      "2026-04-09", "Clothing"),
-        (user_id, 8.75,   "Other",         "2026-04-10", "Miscellaneous"),
-        (user_id, 18.20,  "Food",          "2026-04-10", "Groceries"),
+        (user_id, 12.50, "Food", "2026-04-01", "Lunch at cafe"),
+        (user_id, 45.00, "Transport", "2026-04-02", "Monthly bus pass"),
+        (user_id, 120.00, "Bills", "2026-04-03", "Electricity bill"),
+        (user_id, 30.00, "Health", "2026-04-05", "Pharmacy"),
+        (user_id, 25.00, "Entertainment", "2026-04-07", "Cinema tickets"),
+        (user_id, 65.00, "Shopping", "2026-04-09", "Clothing"),
+        (user_id, 8.75, "Other", "2026-04-10", "Miscellaneous"),
+        (user_id, 18.20, "Food", "2026-04-10", "Groceries"),
     ]
 
     conn.executemany(
