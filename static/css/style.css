@@ -1068,6 +1068,21 @@ a { color: inherit; text-decoration: none; }
 .txn-date  { color: var(--ink-faint); white-space: nowrap; }
 .txn-amount { text-align: right; font-weight: 500; color: var(--ink); }
 
+.txn-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.txn-action-btn {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+}
+
+.txn-delete-form { margin: 0; }
+
+.txn-delete-btn { color: var(--danger); }
+
 /* Category badges */
 .cat-badge {
     display: inline-block;
