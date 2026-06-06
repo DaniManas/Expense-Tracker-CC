@@ -1,3 +1,4 @@
+import os
 from datetime import date as date_type
 from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -28,7 +29,7 @@ VALID_CATEGORIES = [
 ]
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-change-in-prod"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
 
 with app.app_context():
     init_db()

@@ -45,7 +45,7 @@ def client(app):
 @pytest.fixture
 def registered_user(patched_db):
     """Insert a test user directly into the temp DB; return (email, password, user_id)."""
-    email = "tester@spendly.com"
+    email = "tester@pocketlog.com"
     password = "securepass1"
     conn = get_db()
     cursor = conn.execute(

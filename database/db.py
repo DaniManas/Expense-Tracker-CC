@@ -2,7 +2,7 @@ import sqlite3
 import os
 from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "spendly.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "pocketlog.db")
 
 
 def get_db():
@@ -200,7 +200,7 @@ def seed_db():
 
     cursor = conn.execute(
         "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-        ("Demo User", "demo@spendly.com", generate_password_hash("demo123")),
+        ("Demo User", "demo@pocketlog.com", generate_password_hash("demo123")),
     )
     user_id = cursor.lastrowid
 

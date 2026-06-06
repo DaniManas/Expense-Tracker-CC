@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/manasdani/Documents/Claude\\ Expense\\ '/Users/manasdani/Documents/Claude Expense Tracker/expense-tracker/.codex/hooks/protect-files.py'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/manasdani/Documents/Claude\\ Expense\\ '/Users/manasdani/Documents/Claude Expense Tracker/expense-tracker/.codex/hooks/black-format.py'"
+          }
+        ]
+      }
+    ]
+  }
+}

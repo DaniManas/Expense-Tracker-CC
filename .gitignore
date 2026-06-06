@@ -2,6 +2,9 @@ venv/
 expense_tracker.db
 spendly.db
 spendly copy.db
+pocketlog.db
+pocketlog copy.db
+*.db
 --help
 --version
 __pycache__/

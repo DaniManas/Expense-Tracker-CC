@@ -1,0 +1,13 @@
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp"
+
+[mcp_servers.github.http_headers]
+Authorization = "Bearer ${GITHUB_PAT}"
+
+[mcp_servers.sqlite]
+args = [
+    "-y",
+    "@executeautomation/database-server",
+    "/Users/manasdani/Documents/Claude Expense Tracker/expense-tracker/spendly.db",
+]
+command = "npx"
